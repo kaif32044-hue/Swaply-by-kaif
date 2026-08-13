@@ -164,6 +164,16 @@ export default function ShiftSwapApp() {
     flash("Marked as already swapped");
   }
 
+  function deleteShift(shiftId) {
+    setShifts((prev) => prev.filter((s) => s.id !== shiftId));
+    flash("Post deleted");
+  }
+
+  function deleteAllMyRecent() {
+    setShifts((prev) => prev.filter((s) => s.name !== ME || Date.now() - (s.postedAt || 0) >= DAY_MS));
+    flash("Deleted recent posts");
+  }
+
   function reopenShift(shiftId) {
     setShifts((prev) => prev.map((s) => (s.id === shiftId ? { ...s, status: "open" } : s)));
     flash("Reopened on the board");
@@ -208,7 +218,7 @@ export default function ShiftSwapApp() {
           />
         )}
         {tab === "mine" && (
-          <MyShifts shifts={shifts} onMarkSwapped={markSwapped} onReopen={reopenShift} />
+          <MyShifts shifts={shifts} onMarkSwapped={markSwapped} onReopen={reopenShift} onDelete={deleteShift} onDeleteAll={deleteAllMyRecent} />
         )}
       </div>
 
@@ -227,8 +237,8 @@ function Header({ tab, setTab }) {
           <Repeat size={18} color="#0b1220" strokeWidth={2.5} />
         </div>
         <div>
-          <div style={styles.brandName}>Swaply for WR agents</div>
-          <div style={styles.brandSub}>shift exchange</div>
+          <div style={styles.brandName}>Swaply by Kaif</div>
+          <div style={styles.brandSub}>Shift exchange</div>
         </div>
       </div>
       <nav style={styles.nav}>
@@ -256,7 +266,7 @@ function NavBtn({ icon, label, active, onClick }) {
   );
 }
 
-function ShiftCard({ shift, mine, onContact, onMarkSwapped, onReopen }) {
+function ShiftCard({ shift, mine, onContact, onMarkSwapped, onReopen, onDelete }) {
   const swapped = shift.status === "swapped";
   return (
     <div style={{ ...styles.shiftCard, opacity: swapped ? 0.6 : 1 }}>
@@ -294,15 +304,39 @@ function ShiftCard({ shift, mine, onContact, onMarkSwapped, onReopen }) {
           </>
         )}
         {mine && !swapped && (
-          <button style={{ ...styles.primaryBtn, padding: "8px 14px" }} onClick={() => onMarkSwapped(shift.id)}>
-            <Check size={14} style={{ marginRight: 6, verticalAlign: -3 }} />
-            Mark as swapped
-          </button>
+          <>
+            <button style={{ ...styles.primaryBtn, padding: "8px 14px" }} onClick={() => onMarkSwapped(shift.id)}>
+              <Check size={14} style={{ marginRight: 6, verticalAlign: -3 }} />
+              Mark as swapped
+            </button>
+            <button
+              style={{ ...styles.ghostBtn, borderColor: "#4a2330", color: "#ffb3b0" }}
+              onClick={() => {
+                if (window.confirm("Delete this post now?")) onDelete && onDelete(shift.id);
+              }}
+            >
+              <X size={14} style={{ marginRight: 6, verticalAlign: -3 }} />
+              Delete
+            </button>
+          </>
         )}
         {swapped && (
-          <button style={styles.ghostBtn} onClick={() => onReopen(shift.id)}>
-            Reopen post
-          </button>
+          <>
+            <button style={styles.ghostBtn} onClick={() => onReopen(shift.id)}>
+              Reopen post
+            </button>
+            {mine && (
+              <button
+                style={{ ...styles.ghostBtn, borderColor: "#4a2330", color: "#ffb3b0" }}
+                onClick={() => {
+                  if (window.confirm("Delete this post now?")) onDelete && onDelete(shift.id);
+                }}
+              >
+                <X size={14} style={{ marginRight: 6, verticalAlign: -3 }} />
+                Delete
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -349,15 +383,29 @@ function Board({ shifts, onContact, onPost, onMarkSwapped, onReopen }) {
   );
 }
 
-function MyShifts({ shifts, onMarkSwapped, onReopen }) {
+function MyShifts({ shifts, onMarkSwapped, onReopen, onDelete, onDeleteAll }) {
   const mine = shifts.filter((s) => s.name === ME);
   return (
     <div style={{ animation: "slideUp 0.3s ease" }}>
-      <div style={styles.h1}>Your posted shifts</div>
-      <div style={styles.subtext}>Mark a post as swapped once you've arranged it with another agent.</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div style={styles.h1}>Your posted shifts</div>
+          <div style={styles.subtext}>Mark a post as swapped once you've arranged it with another agent.</div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            style={{ ...styles.ghostBtn, borderColor: "#3b2a2f", color: "#ffb3b0" }}
+            onClick={() => {
+              if (window.confirm("Delete all your recent posts (last 24h)?")) onDeleteAll && onDeleteAll();
+            }}
+          >
+            Delete all recent
+          </button>
+        </div>
+      </div>
       <div style={styles.grid}>
         {mine.map((s) => (
-          <ShiftCard key={s.id} shift={s} mine={true} onContact={() => {}} onMarkSwapped={onMarkSwapped} onReopen={onReopen} />
+          <ShiftCard key={s.id} shift={s} mine={true} onContact={() => {}} onMarkSwapped={onMarkSwapped} onReopen={onReopen} onDelete={onDelete} />
         ))}
         {mine.length === 0 && (
           <div style={styles.emptyState}>
