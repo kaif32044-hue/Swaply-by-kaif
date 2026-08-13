@@ -1,0 +1,5 @@
+html, body, #root { height: 100%; margin: 0; }
+body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: #0b1220; }
+
+/* small helper to ensure app takes full viewport */
+.app-root { min-height: 100vh }
